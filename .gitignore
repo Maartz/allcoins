@@ -35,3 +35,7 @@ npm-debug.log
 
 # Ignore VSCode elixir_ls file
 .elixir_ls
+
+.idea
+
+allcoins.iml
