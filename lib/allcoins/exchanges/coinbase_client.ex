@@ -3,7 +3,10 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
 
   """
 
+  alias Allcoins.{Product, Trade}
+
   use GenServer
+  @exchange_name "coinbase"
 
   # TODO: handle when the connection is closed
   # Last message: {:gun_down, #PID<0.391.0>, :ws, :closed, [], []}
@@ -66,7 +69,8 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
 
   @spec handle_ws_message(any, any) :: {:noreply, any}
   def handle_ws_message(%{"type" => "ticker"} = msg, state) do
-    IO.inspect(msg, label: "ticker")
+    IO.inspect(msg, label: "trade")
+    # trade = message_to_trade(msg) |> IO.inspect(label: "trade")
     {:noreply, state}
   end
 
@@ -100,5 +104,31 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
     subscription_frames(state.currency_pairs)
     # send subscription frames to coinbase
     |> Enum.each(&:gun.ws_send(state.conn, &1))
+  end
+
+  @spec message_to_trade(nil | maybe_improper_list | map) :: %Allcoins.Trade{
+    price: String.t(),
+    product: Product.t(),
+    traded_at: DateTime.t(),
+    volume: String.t()
+  }
+  def message_to_trade(msg) do
+    currency_pair = msg["product_id"]
+    product = Product.new(@exchange_name, currency_pair)
+    price = msg["price"]
+    volume = msg["last_size"]
+    traded_at = datetime_from_string(msg["time"])
+
+    Trade.new(
+      product: product,
+      price: price,
+      volume: volume,
+      traded_at: traded_at
+    )
+  end
+
+  defp datetime_from_string(time_string) do
+    {:ok, datetime, _} = DateTime.from_iso8601(time_string)
+    datetime
   end
 end
