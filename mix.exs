@@ -45,7 +45,8 @@ defmodule Allcoins.MixProject do
       {:jason, "~> 1.0"},
       {:plug_cowboy, "~> 2.0"},
       {:cowlib, "~> 2.9.1", override: true},
-      {:gun, "~> 1.3"}
+      {:gun, "~> 1.3"},
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 
