@@ -106,29 +106,32 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
     |> Enum.each(&:gun.ws_send(state.conn, &1))
   end
 
-  @spec message_to_trade(nil | maybe_improper_list | map) :: %Allcoins.Trade{
-    price: String.t(),
-    product: Product.t(),
-    traded_at: DateTime.t(),
-    volume: String.t()
-  }
+  @spec message_to_trade(map()) :: {:ok, Trade.t()} | {:error, any()}
   def message_to_trade(msg) do
+    with :ok <- validate_required(msg,
+      ["price", "product", "traded_at", "time"]),
+      {:ok, traded_at, _} = DateTime.from_iso8601(msg["time"])
+    do
     currency_pair = msg["product_id"]
-    product = Product.new(@exchange_name, currency_pair)
-    price = msg["price"]
-    volume = msg["last_size"]
-    traded_at = datetime_from_string(msg["time"])
-
     Trade.new(
-      product: product,
-      price: price,
-      volume: volume,
+      product: Product.new(@exchange_name, currency_pair),
+      price: msg["price"],
+      volume: msg["last_size"],
       traded_at: traded_at
     )
+    else
+      {:error, _reason} = error -> error
+    end
   end
 
-  defp datetime_from_string(time_string) do
-    {:ok, datetime, _} = DateTime.from_iso8601(time_string)
-    datetime
+  @spec validate_required(map(), [String.t()]) :: :ok | {:error, {String.t(), :required}}
+  def validate_required(msg, keys) do
+    required_key = Enum.find(keys, &is_nil(msg[&1]))
+
+    cond do
+      is_nil(required_key) == true -> :ok
+      true -> {:error, {required_key, :required}}
+    end
   end
+
 end
