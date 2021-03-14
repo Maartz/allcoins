@@ -1,5 +1,5 @@
 defmodule Allcoins.Exchanges.BitstampClient do
-@moduledoc """
+  @moduledoc """
 
   """
 
@@ -68,33 +68,15 @@ defmodule Allcoins.Exchanges.BitstampClient do
     handle_ws_message(Jason.decode!(msg), state)
   end
 
-  # @spec handle_ws_message(any, any) :: {:noreply, any}
-  # def handle_ws_message(%{"type" => "ticker"} = msg, state) do
-  #   trade = message_to_trade(msg) |> IO.inspect(label: "trade")
-  #   {:noreply, state}
-  # end
+  @spec handle_ws_message(any, any) :: {:noreply, any}
+  def handle_ws_message(%{"event" => "trade"} = msg, state) do
+    _trade = message_to_trade(msg) |> IO.inspect(label: "trade")
+    {:noreply, state}
+  end
 
   def handle_ws_message(msg, state) do
     IO.inspect(msg, label: "unhandled message")
     {:noreply, state}
-    """
-    unhandled message: %{
-      "channel" => "live_trades_btceur",
-      "data" => %{
-        "amount" => 0.05772371,
-        "amount_str" => "0.05772371",
-        "buy_order_id" => 1338955183640576,
-        "id" => 157353479,
-        "microtimestamp" => "1615728330038000",
-        "price" => 49794.61,
-        "price_str" => "49794.61",
-        "sell_order_id" => 1338955180769280,
-        "timestamp" => "1615728330",
-        "type" => 0
-      },
-      "event" => "trade"
-    }
-    """
   end
 
   @spec subscription_frames(list()) :: list()
@@ -104,12 +86,15 @@ defmodule Allcoins.Exchanges.BitstampClient do
 
   defp subscription_frame(currency_pair) do
     #  https://www.bitstamp.net/websocket/v2/
-    msg = %{
-      "event" => "bts:subscribe",
-      "data" => %{
-        "channel" => "live_trades_#{currency_pair}"
+    msg =
+      %{
+        "event" => "bts:subscribe",
+        "data" => %{
+          "channel" => "live_trades_#{currency_pair}"
+        }
       }
-    } |> Jason.encode!()
+      |> Jason.encode!()
+
     {:text, msg}
   end
 
@@ -125,31 +110,43 @@ defmodule Allcoins.Exchanges.BitstampClient do
     |> Enum.each(&:gun.ws_send(state.conn, &1))
   end
 
-  # @spec message_to_trade(map()) :: {:ok, Trade.t()} | {:error, any()}
-  # def message_to_trade(msg) do
-  #   with :ok <- validate_required(msg,
-  #     ["price", "product", "traded_at", "time"]),
-  #     {:ok, traded_at, _} = DateTime.from_iso8601(msg["time"])
-  #   do
-  #   currency_pair = msg["product_id"]
-  #   Trade.new(
-  #     product: Product.new(@exchange_name, currency_pair),
-  #     price: msg["price"],
-  #     volume: msg["last_size"],
-  #     traded_at: traded_at
-  #   )
-  #   else
-  #     {:error, _reason} = error -> error
-  #   end
-  # end
+  @spec message_to_trade(map()) :: {:ok, Trade.t()} | {:error, any()}
+  def message_to_trade(%{"data" => data, "channel" => "live_trades_" <> currency_pair} = msg)
+      when is_map(data) do
+    with :ok <-
+           validate_required(
+             data,
+             ["amount_str", "price_str", "timestamp"]
+           ),
+         {:ok, traded_at} <- timestamp_to_datetime(data["timestamp"]) do
+      Trade.new(
+        product: Product.new(@exchange_name, currency_pair),
+        price: data["price_str"],
+        volume: data["amount_str"],
+        traded_at: traded_at
+      )
+    else
+      {:error, _reason} = error -> error
+    end
+  end
 
-  # @spec validate_required(map(), [String.t()]) :: :ok | {:error, {String.t(), :required}}
-  # def validate_required(msg, keys) do
-  #   required_key = Enum.find(keys, &is_nil(msg[&1]))
+  def message_to_trade(_msg), do: {:error, :invalid_trade_message}
 
-  #   cond do
-  #     is_nil(required_key) == true -> :ok
-  #     true -> {:error, {required_key, :required}}
-  #   end
-  # end
+  @spec timestamp_to_datetime(String.t()) :: {:ok, DateTime.t()} | {:error, atom()}
+  defp timestamp_to_datetime(timestamp) do
+    case Integer.parse(timestamp) do
+      {ts, _} -> DateTime.from_unix(ts)
+      :error -> {:error, :invalid_timestamp_string}
+    end
+  end
+
+  @spec validate_required(map(), [String.t()]) :: :ok | {:error, {String.t(), :required}}
+  def validate_required(msg, keys) do
+    required_key = Enum.find(keys, &is_nil(msg[&1]))
+
+    cond do
+      is_nil(required_key) == true -> :ok
+      true -> {:error, {required_key, :required}}
+    end
+  end
 end

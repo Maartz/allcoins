@@ -1,8 +1,8 @@
 defmodule Allcoins.Product do
   @type product :: %__MODULE__{
-    exchange_name: String.t(),
-    currency_pair: String.t()
-  }
+          exchange_name: String.t(),
+          currency_pair: String.t()
+        }
   defstruct [:exchange_name, :currency_pair]
 
   @spec new(String.t(), String.t()) :: product

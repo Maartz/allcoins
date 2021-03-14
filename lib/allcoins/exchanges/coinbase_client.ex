@@ -108,17 +108,20 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
 
   @spec message_to_trade(map()) :: {:ok, Trade.t()} | {:error, any()}
   def message_to_trade(msg) do
-    with :ok <- validate_required(msg,
-      ["price", "product", "traded_at", "time"]),
-      {:ok, traded_at, _} = DateTime.from_iso8601(msg["time"])
-    do
-    currency_pair = msg["product_id"]
-    Trade.new(
-      product: Product.new(@exchange_name, currency_pair),
-      price: msg["price"],
-      volume: msg["last_size"],
-      traded_at: traded_at
-    )
+    with :ok <-
+           validate_required(
+             msg,
+             ["price", "product", "traded_at", "time"]
+           ),
+         {:ok, traded_at, _} = DateTime.from_iso8601(msg["time"]) do
+      currency_pair = msg["product_id"]
+
+      Trade.new(
+        product: Product.new(@exchange_name, currency_pair),
+        price: msg["price"],
+        volume: msg["last_size"],
+        traded_at: traded_at
+      )
     else
       {:error, _reason} = error -> error
     end
@@ -133,5 +136,4 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
       true -> {:error, {required_key, :required}}
     end
   end
-
 end

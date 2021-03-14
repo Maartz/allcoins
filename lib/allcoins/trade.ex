@@ -2,11 +2,11 @@ defmodule Allcoins.Trade do
   alias Allcoins.Product
 
   @type trade :: %__MODULE__{
-    product: Product.t(),
-    traded_at: DateTime.t(),
-    price: String.t(),
-    volume: String.t(),
-  }
+          product: Product.t(),
+          traded_at: DateTime.t(),
+          price: String.t(),
+          volume: String.t()
+        }
   defstruct [:product, :traded_at, :price, :volume]
 
   @doc """
