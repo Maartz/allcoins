@@ -1,76 +1,26 @@
 defmodule Allcoins.Exchanges.BitstampClient do
   @moduledoc """
+   BistampClient provides an interface to connect in WS to Coinbase crypto-currency feed.
+  To start a connexion, you need to pass the BistampClient module to the Client.start_link function.
+  See the Client module documentation for further info.
 
+  The BistampClient.available_currency list all the current supported currency.
   """
 
   alias Allcoins.{Product, Trade}
+  alias Allcoins.Exchanges.Client
+  require Client
 
-  use GenServer
-  @exchange_name "bitstamp"
+  Client.defclient(
+    exchange_name: "bitstamp",
+    host: 'ws.bitstamp.net',
+    port: 443,
+    currency_pairs: ["btcusd", "ethusd", "ltcusd", "btceur", "etheur", "ltceur"]
+  )
 
-  # TODO: handle when the connection is closed
-  # Last message: {:gun_down, #PID<0.391.0>, :ws, :closed, [], []}
-
-  # TODO: handle when the host is false/unreachable
-  # TODO: find a way to avoid code repetition in exchanges modules
-
-  @server_host 'ws.bitstamp.net'
-  @server_port 443
-
-  @spec start_link(any, [
-          {:debug, [:log | :statistics | :trace | {any, any}]}
-          | {:hibernate_after, :infinity | non_neg_integer}
-          | {:name, atom | {:global, any} | {:via, atom, any}}
-          | {:spawn_opt,
-             :link
-             | :monitor
-             | {:fullsweep_after, non_neg_integer}
-             | {:min_bin_vheap_size, non_neg_integer}
-             | {:min_heap_size, non_neg_integer}
-             | {:priority, :high | :low | :normal}}
-          | {:timeout, :infinity | non_neg_integer}
-        ]) :: :ignore | {:error, any} | {:ok, pid}
-  def start_link(currency_pairs, options \\ []) do
-    GenServer.start_link(__MODULE__, currency_pairs, options)
-  end
-
-  @spec init(any) :: {:ok, %{conn: nil, currency_pairs: any}, {:continue, :connect}}
-  def init(currency_pairs) do
-    # Initialize the state of the process
-    state = %{
-      currency_pairs: currency_pairs,
-      conn: nil
-    }
-
-    {:ok, state, {:continue, :connect}}
-  end
-
-  @spec handle_continue(:connect, %{:conn => any, optional(any) => any}) ::
-          {:noreply, %{:conn => pid, optional(any) => any}}
-  def handle_continue(:connect, state) do
-    # Called async because of {:continue, :connect} in the init
-    {:noreply, connect(state)}
-  end
-
-  # Pattern matching on gun return tuples
-  # https://ninenines.eu/docs/en/gun/2.0/manual/gun/
-  def handle_info({:gun_up, conn, :http}, %{conn: conn} = state) do
-    :gun.ws_upgrade(conn, "/")
-    {:noreply, state}
-  end
-
-  def handle_info({:gun_upgrade, conn, _ref, ["websocket"], _headers}, %{conn: conn} = state) do
-    subscribe(state)
-    {:noreply, state}
-  end
-
-  def handle_info({:gun_ws, conn, _ref, {:text, msg} = _frame}, %{conn: conn} = state) do
-    handle_ws_message(Jason.decode!(msg), state)
-  end
-
-  @spec handle_ws_message(any, any) :: {:noreply, any}
+  @impl true
   def handle_ws_message(%{"event" => "trade"} = msg, state) do
-    _trade = message_to_trade(msg) |> IO.inspect(label: "trade")
+    _trade = message_to_trade(msg) |> IO.inspect(label: "Bitstamp")
     {:noreply, state}
   end
 
@@ -98,20 +48,8 @@ defmodule Allcoins.Exchanges.BitstampClient do
     {:text, msg}
   end
 
-  def connect(state) do
-    {:ok, conn} = :gun.open(@server_host, @server_port, %{protocols: [:http]})
-    %{state | conn: conn}
-  end
-
-  defp subscribe(state) do
-    # subscription frames
-    subscription_frames(state.currency_pairs)
-    # send subscription frames to coinbase
-    |> Enum.each(&:gun.ws_send(state.conn, &1))
-  end
-
   @spec message_to_trade(map()) :: {:ok, Trade.t()} | {:error, any()}
-  def message_to_trade(%{"data" => data, "channel" => "live_trades_" <> currency_pair} = msg)
+  def message_to_trade(%{"data" => data, "channel" => "live_trades_" <> currency_pair} = _msg)
       when is_map(data) do
     with :ok <-
            validate_required(
@@ -120,7 +58,7 @@ defmodule Allcoins.Exchanges.BitstampClient do
            ),
          {:ok, traded_at} <- timestamp_to_datetime(data["timestamp"]) do
       Trade.new(
-        product: Product.new(@exchange_name, currency_pair),
+        product: Product.new(exchange_name(), currency_pair),
         price: data["price_str"],
         volume: data["amount_str"],
         traded_at: traded_at
@@ -137,16 +75,6 @@ defmodule Allcoins.Exchanges.BitstampClient do
     case Integer.parse(timestamp) do
       {ts, _} -> DateTime.from_unix(ts)
       :error -> {:error, :invalid_timestamp_string}
-    end
-  end
-
-  @spec validate_required(map(), [String.t()]) :: :ok | {:error, {String.t(), :required}}
-  def validate_required(msg, keys) do
-    required_key = Enum.find(keys, &is_nil(msg[&1]))
-
-    cond do
-      is_nil(required_key) == true -> :ok
-      true -> {:error, {required_key, :required}}
     end
   end
 end

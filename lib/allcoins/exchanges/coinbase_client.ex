@@ -5,22 +5,23 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
   # TODO: handle when the host is false/unreachable
 
   @moduledoc """
+  CoinbaseClient provides an interface to connect in WS to Coinbase crypto-currency feed.
+  To start a connexion, you need to pass the CoinbaseClient module to the Client.start_link function.
+  See the Client module documentation for further info.
 
+  The CoinbaseClient.available_currency list all the current supported currency.
   """
 
   alias Allcoins.{Product, Trade}
   alias Allcoins.Exchanges.Client
-  import Client, only: [validate_required: 2]
+  require Client
 
-  @behaviour Client
-  @impl true
-  @spec exchange_name :: <<_::64>>
-  def exchange_name, do: "coinbase"
-  @impl true
-  def server_host, do: 'ws-feed.pro.coinbase.com'
-  @impl true
-  def server_port, do: 443
-
+  Client.defclient(
+    exchange_name: "coinbase",
+    host: 'ws-feed.pro.coinbase.com',
+    port: 443,
+    currency_pairs: ["BTC-USD", "ETH-USD", "ETH-EUR", "ETH-USD", "LTC-EUR", "LTC-USD"]
+  )
 
   @impl true
   def handle_ws_message(%{"type" => "ticker"} = msg, state) do
@@ -48,6 +49,10 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
     [{:text, msg}]
   end
 
+  @doc """
+  Map a message coming from Coinbase to valid Trade struct.
+  Otherwise, it returns an error.
+  """
   @spec message_to_trade(map()) :: {:ok, Trade.t()} | {:error, any()}
   def message_to_trade(msg) do
     with :ok <-
@@ -68,5 +73,4 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
       {:error, _reason} = error -> error
     end
   end
-
 end

@@ -1,12 +1,30 @@
 defmodule Allcoins.Exchanges.Client do
+  @moduledoc """
+  Client provides a generic API to create a new connexion on an exchange via WebSocket.
+  To start a new connexion you need to use start_link/3
+
+  ## Examples
+
+  iex> alias Allcoins.Exchanges.CoinbaseClient
+  iex> Allcoins.Exchanges.Client.start_link(CoinbaseClient, CoinbaseClient.available_currency_pairs)
+  iex> Coinbase: %Allcoins.Trade{
+    price: "59270.71",
+    product: %Allcoins.Product{
+      currency_pair: "BTC-USD",
+      exchange_name: "coinbase"
+    },
+    traded_at: ~U[2021-03-20 14:33:01.866149Z],
+    volume: "0.00419573"
+  }
+  """
   use GenServer
 
   @type client :: %__MODULE__{
-    module: module(),
-    conn: pid(),
-    conn_ref: reference(),
-    currency_pairs: [String.t()]
-  }
+          module: module(),
+          conn: pid(),
+          conn_ref: reference(),
+          currency_pairs: [String.t()]
+        }
 
   @callback exchange_name() :: String.t()
   @callback server_host() :: list()
@@ -15,6 +33,31 @@ defmodule Allcoins.Exchanges.Client do
   @callback handle_ws_message(map(), module()) :: any()
 
   defstruct [:module, :conn, :conn_ref, :currency_pairs]
+
+  defmacro defclient(opts) do
+    exchange_name = Keyword.fetch!(opts, :exchange_name)
+    host = Keyword.fetch!(opts, :host)
+    port = Keyword.fetch!(opts, :port)
+    currency_pairs = Keyword.fetch!(opts, :currency_pairs)
+
+    quote do
+      @behabvior unquote(__MODULE__)
+      import unquote(__MODULE__), only: [validate_required: 2]
+      require Logger
+
+      def exchange_name, do: unquote(exchange_name)
+      def server_host, do: unquote(host)
+      def server_port, do: unquote(port)
+      def available_currency_pairs, do: unquote(currency_pairs)
+
+      def handle_ws_message(msg, client) do
+        Logger.debug("handle_ws_message #{inspect(msg)}")
+        {:noreply, client}
+      end
+
+      defoverridable(handle_ws_message: 2)
+    end
+  end
 
   def start_link(module, currency_pairs, options \\ []) do
     GenServer.start_link(__MODULE__, {module, currency_pairs}, options)
@@ -67,8 +110,9 @@ defmodule Allcoins.Exchanges.Client do
   def validate_required(msg, keys) do
     required_key = Enum.find(keys, &is_nil(msg[&1]))
 
-    if is_nil(required_key), do: :ok,
-    else: {:error, {required_key, :required}}
+    if is_nil(required_key),
+      do: :ok,
+      else: {:error, {required_key, :required}}
   end
 
   defp subscribe(client) do
