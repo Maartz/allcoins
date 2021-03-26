@@ -12,4 +12,10 @@ defmodule Allcoins.Product do
       currency_pair: currency_pair
     }
   end
+
+  defimpl String.Chars do
+    def to_string(product) do
+      product.exchange_name <> ":" <> product.currency_pair
+    end
+  end
 end
