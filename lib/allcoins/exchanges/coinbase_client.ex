@@ -12,8 +12,8 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
   The CoinbaseClient.available_currency list all the current supported currency.
   """
 
-  alias Allcoins.{Product, Trade}
-  alias Allcoins.Exchanges.Client
+  alias Allcoins.{Product, Trade, Exchanges}
+  alias Allcoins.Exchanges.{Client}
   require Client
 
   Client.defclient(
@@ -25,7 +25,8 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
 
   @impl true
   def handle_ws_message(%{"type" => "ticker"} = msg, state) do
-    _trade = message_to_trade(msg) |> IO.inspect(label: "Coinbase")
+    {:ok, trade} = message_to_trade(msg)
+    Exchanges.broadcast(trade)
     {:noreply, state}
   end
 
@@ -62,13 +63,14 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
            ),
          {:ok, traded_at, _} = DateTime.from_iso8601(msg["time"]) do
       currency_pair = msg["product_id"]
-
-      Trade.new(
-        product: Product.new(exchange_name(), currency_pair),
-        price: msg["price"],
-        volume: msg["last_size"],
-        traded_at: traded_at
-      )
+      {:ok,
+        Trade.new(
+          product: Product.new(exchange_name(), currency_pair),
+          price: msg["price"],
+          volume: msg["last_size"],
+          traded_at: traded_at
+        )
+      }
     else
       {:error, _reason} = error -> error
     end

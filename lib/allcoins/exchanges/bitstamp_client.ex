@@ -7,7 +7,7 @@ defmodule Allcoins.Exchanges.BitstampClient do
   The BistampClient.available_currency list all the current supported currency.
   """
 
-  alias Allcoins.{Product, Trade}
+  alias Allcoins.{Product, Trade, Exchanges}
   alias Allcoins.Exchanges.Client
   require Client
 
@@ -20,7 +20,8 @@ defmodule Allcoins.Exchanges.BitstampClient do
 
   @impl true
   def handle_ws_message(%{"event" => "trade"} = msg, state) do
-    _trade = message_to_trade(msg) |> IO.inspect(label: "Bitstamp")
+    {:ok, trade} = message_to_trade(msg)
+    Exchanges.broadcast(trade)
     {:noreply, state}
   end
 
@@ -57,12 +58,14 @@ defmodule Allcoins.Exchanges.BitstampClient do
              ["amount_str", "price_str", "timestamp"]
            ),
          {:ok, traded_at} <- timestamp_to_datetime(data["timestamp"]) do
-      Trade.new(
-        product: Product.new(exchange_name(), currency_pair),
-        price: data["price_str"],
-        volume: data["amount_str"],
-        traded_at: traded_at
-      )
+      {:ok,
+        Trade.new(
+          product: Product.new(exchange_name(), currency_pair),
+          price: data["price_str"],
+          volume: data["amount_str"],
+          traded_at: traded_at
+        )
+      }
     else
       {:error, _reason} = error -> error
     end
