@@ -15,6 +15,11 @@ defmodule Allcoins.Historical do
     GenServer.call(pid, {:get_last_trade, product})
   end
 
+  @spec get_last_trades(pid() | atom(), [Product.t()]) :: [Trade.t()]
+  def get_last_trades(pid \\__MODULE__, products) do
+    GenServer.call(pid, {:get_last_trades, products})
+  end
+
   # :products
   def start_link(opts) do
     {products, opts} = Keyword.pop(opts, :products, []) # past an empty as default value to avoid genserver to crash
@@ -32,13 +37,18 @@ defmodule Allcoins.Historical do
   end
 
   def handle_info({:new_trade, trade}, historical) do
-    updatead_trades = Map.put(historical.trades, trade.product, trade)
-    updatead_historical = %{historical | trades: updatead_trades}
-    {:noreply, updatead_historical}
+    updated_trades = Map.put(historical.trades, trade.product, trade)
+    updated_historical = %{historical | trades: updated_trades}
+    {:noreply, updated_historical}
   end
 
   def handle_call({:get_last_trade, product}, _from, historical) do
     trade = Map.get(historical.trades, product)
     {:reply, trade, historical}
+  end
+
+  def handle_call({:get_last_trades, products}, _from, historical) do
+    trades = Enum.map(products, &Map.get(historical.trades, &1))
+    {:reply, trades, historical}
   end
 end
