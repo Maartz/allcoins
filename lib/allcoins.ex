@@ -7,6 +7,9 @@ defmodule Allcoins do
   if it comes from the database, an external API or others.
   """
 
-  defdelegate subscribe_to_trades(prodcut), to: Allcoins.Exchanges, as: :subscribe
-  defdelegate unsubscribe_to_trades(prodcut), to: Allcoins.Exchanges, as: :unsubscribe
+  defdelegate subscribe_to_trades(product), to: Allcoins.Exchanges, as: :subscribe
+  defdelegate unsubscribe_to_trades(product), to: Allcoins.Exchanges, as: :unsubscribe
+
+  defdelegate get_last_trade(product), to: Allcoins.Historical
+  defdelegate get_last_trades(products), to: Allcoins.Historical
 end
