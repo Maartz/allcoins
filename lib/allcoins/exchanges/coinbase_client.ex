@@ -20,7 +20,7 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
     exchange_name: "coinbase",
     host: 'ws-feed.pro.coinbase.com',
     port: 443,
-    currency_pairs: ["BTC-USD", "ETH-USD", "ETH-EUR", "ETH-USD", "LTC-EUR", "LTC-USD"]
+    currency_pairs: ["BTC-USD", "BTC-EUR", "ETH-EUR", "ETH-USD", "LTC-EUR", "LTC-USD"]
   )
 
   @impl true
