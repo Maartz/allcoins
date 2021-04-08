@@ -11,6 +11,8 @@ defmodule Allcoins.Application do
       AllcoinsWeb.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: Allcoins.PubSub},
+      {Allcoins.Historical, name: Allcoins.Historical},
+      {Allcoins.Exchanges.Supervisor, name: Allcoins.Exchanges.Supervisor},
       # Start the Endpoint (http/https)
       AllcoinsWeb.Endpoint
       # Start a worker by calling: Allcoins.Worker.start_link(arg)

@@ -23,6 +23,7 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
     currency_pairs: ["BTC-USD", "BTC-EUR", "ETH-EUR", "ETH-USD", "LTC-EUR", "LTC-USD"]
   )
 
+
   @impl true
   def handle_ws_message(%{"type" => "ticker"} = msg, state) do
     {:ok, trade} = message_to_trade(msg)

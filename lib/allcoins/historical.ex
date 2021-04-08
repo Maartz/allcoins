@@ -22,7 +22,7 @@ defmodule Allcoins.Historical do
 
   # :products
   def start_link(opts) do
-    {products, opts} = Keyword.pop(opts, :products, []) # past an empty as default value to avoid genserver to crash
+    {products, opts} = Keyword.pop(opts, :products, Exchanges.available_products()) # past an empty as default value to avoid genserver to crash
     GenServer.start_link(__MODULE__, products, opts)
   end
 
