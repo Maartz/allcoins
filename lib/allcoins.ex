@@ -12,4 +12,6 @@ defmodule Allcoins do
 
   defdelegate get_last_trade(product), to: Allcoins.Historical
   defdelegate get_last_trades(products), to: Allcoins.Historical
+
+  defdelegate available_products(), to: Allcoins.Exchanges
 end
