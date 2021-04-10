@@ -28,10 +28,15 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
     {:noreply, socket}
   end
 
+  def handle_event("clear", _params, socket) do
+    {:noreply, assign(socket, :trades, %{})}
+  end
+
   @impl true
   @spec render(any) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~L"""
+    <button phx-click="clear">Clear</button>
     <table>
        <thead>
          <th>Traded at</th>
