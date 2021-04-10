@@ -3,26 +3,27 @@ defmodule Allcoins.Historical do
   alias Allcoins.{Product, Trade, Exchanges}
 
   @type historical :: %__MODULE__{
-    products: [Product.t()],
-    trades: %{
-      Product.t() => Trade.t()
-    }
-  }
+          products: [Product.t()],
+          trades: %{
+            Product.t() => Trade.t()
+          }
+        }
   defstruct [:products, :trades]
 
   @spec get_last_trade(pid() | atom(), Product.t()) :: Trade.t() | nil
-  def get_last_trade(pid \\__MODULE__, product) do
+  def get_last_trade(pid \\ __MODULE__, product) do
     GenServer.call(pid, {:get_last_trade, product})
   end
 
   @spec get_last_trades(pid() | atom(), [Product.t()]) :: [Trade.t()]
-  def get_last_trades(pid \\__MODULE__, products) do
+  def get_last_trades(pid \\ __MODULE__, products) do
     GenServer.call(pid, {:get_last_trades, products})
   end
 
   # :products
   def start_link(opts) do
-    {products, opts} = Keyword.pop(opts, :products, Exchanges.available_products()) # past an empty as default value to avoid genserver to crash
+    # past an empty as default value to avoid genserver to crash
+    {products, opts} = Keyword.pop(opts, :products, Exchanges.available_products())
     GenServer.start_link(__MODULE__, products, opts)
   end
 

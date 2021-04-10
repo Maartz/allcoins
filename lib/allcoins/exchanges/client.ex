@@ -57,6 +57,7 @@ defmodule Allcoins.Exchanges.Client do
 
       def child_spec(opts) do
         {currency_pairs, opts} = Keyword.pop(opts, :currency_pairs, available_currency_pairs())
+
         %{
           id: __MODULE__,
           start: {unquote(__MODULE__), :start_link, [__MODULE__, currency_pairs, opts]}

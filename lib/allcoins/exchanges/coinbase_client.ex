@@ -23,7 +23,6 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
     currency_pairs: ["BTC-USD", "BTC-EUR", "ETH-EUR", "ETH-USD", "LTC-EUR", "LTC-USD"]
   )
 
-
   @impl true
   def handle_ws_message(%{"type" => "ticker"} = msg, state) do
     {:ok, trade} = message_to_trade(msg)
@@ -64,14 +63,14 @@ defmodule Allcoins.Exchanges.CoinbaseClient do
            ),
          {:ok, traded_at, _} = DateTime.from_iso8601(msg["time"]) do
       currency_pair = msg["product_id"]
+
       {:ok,
-        Trade.new(
-          product: Product.new(exchange_name(), currency_pair),
-          price: msg["price"],
-          volume: msg["last_size"],
-          traded_at: traded_at
-        )
-      }
+       Trade.new(
+         product: Product.new(exchange_name(), currency_pair),
+         price: msg["price"],
+         volume: msg["last_size"],
+         traded_at: traded_at
+       )}
     else
       {:error, _reason} = error -> error
     end

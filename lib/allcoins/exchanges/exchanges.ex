@@ -1,5 +1,4 @@
 defmodule Allcoins.Exchanges do
-
   alias Allcoins.{Product, Trade}
   # Exchanges Context
   # Group exchanges functions
@@ -13,8 +12,8 @@ defmodule Allcoins.Exchanges do
   # Calculated at compile time
   # It's calculated once
   @available_products (for client <- @clients, pair <- client.available_currency_pairs() do
-    Product.new(client.exchange_name(), pair)
-  end)
+                         Product.new(client.exchange_name(), pair)
+                       end)
 
   @spec clients :: [module()]
   def clients, do: @clients
@@ -29,7 +28,7 @@ defmodule Allcoins.Exchanges do
 
   @spec unsubscribe(Product.t()) :: :ok | {:error, term}
   def unsubscribe(product) do
-   Phoenix.PubSub.unsubscribe(Allcoins.PubSub, topic(product))
+    Phoenix.PubSub.unsubscribe(Allcoins.PubSub, topic(product))
   end
 
   @spec broadcast(Trade.t()) :: :ok | {:error, term}
