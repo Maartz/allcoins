@@ -4,9 +4,8 @@ defmodule Allcoins.ExchangesTest do
 
   test "available_products/0 returns all the available products" do
     assert MapSet.new(all_available_products()) ==
-        MapSet.new(Exchanges.available_products())
+             MapSet.new(Exchanges.available_products())
   end
-
 
   defp all_available_products do
     [

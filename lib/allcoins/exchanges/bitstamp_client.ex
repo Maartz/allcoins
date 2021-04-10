@@ -59,13 +59,12 @@ defmodule Allcoins.Exchanges.BitstampClient do
            ),
          {:ok, traded_at} <- timestamp_to_datetime(data["timestamp"]) do
       {:ok,
-        Trade.new(
-          product: Product.new(exchange_name(), currency_pair),
-          price: data["price_str"],
-          volume: data["amount_str"],
-          traded_at: traded_at
-        )
-      }
+       Trade.new(
+         product: Product.new(exchange_name(), currency_pair),
+         price: data["price_str"],
+         volume: data["amount_str"],
+         traded_at: traded_at
+       )}
     else
       {:error, _reason} = error -> error
     end
