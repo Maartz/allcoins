@@ -17,8 +17,7 @@ defmodule AllcoinsWeb.Router do
   scope "/", AllcoinsWeb do
     pipe_through :browser
 
-    # live "/", PageLive, :index
-    get "/", ProductController, :index
+    live "/", CryptoDashboardLive
   end
 
   # Other scopes may use custom stacks.
