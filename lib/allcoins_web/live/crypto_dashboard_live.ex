@@ -6,6 +6,7 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
   alias Allcoins.Product
 
   def mount(_params, _session, socket) do
+    IO.inspect(self(), label: "LIVEVIEW MOUNT")
     socket = assign(socket, trades: %{}, products: [])
     {:ok, socket}
   end

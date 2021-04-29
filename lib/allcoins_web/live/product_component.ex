@@ -2,9 +2,19 @@ defmodule AllcoinsWeb.ProductComponent do
   use AllcoinsWeb, :live_component
   import AllcoinsWeb.ProductHelpers
 
-  # def mount(socket)
-  # def update(assigns, socket)
+  def mount(socket) do
+    IO.inspect(self(), label: "MOUNT")
+    {:ok, socket}
+  end
+
+  def update(assigns, socket) do
+    IO.inspect(self(), label: "UPDATE")
+    socket = assign(socket, assigns)
+    {:ok, socket}
+  end
+
   def render(assigns) do
+    IO.inspect(self(), label: "RENDER")
     ~L"""
     <div class="product-component">
       <div class="currency-container">
