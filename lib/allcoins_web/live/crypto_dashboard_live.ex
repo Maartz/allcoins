@@ -1,4 +1,7 @@
 defmodule AllcoinsWeb.CryptoDashboardLive do
+
+  import AllcoinsWeb.ProductHelpers
+
   use AllcoinsWeb, :live_view
   alias Allcoins.Product
 
@@ -24,14 +27,21 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
     <%= for product <- @products, trade = @trades[product] do %>
       <div class="product-component">
         <div class="currency-container">
-          <img class="icon" src="" />
+          <img class="icon" src="<%= crypto_icon(@socket, product) %>" />
           <div class="crypto-name">
-            <%= product.currency_pair %>
+            <%= crypto_name(product) %>
           </div>
         </div>
         <div class="price-container">
+          <ul class="fiat-symbols">
+          <%= for fiat <- fiat_symbols() do %>
+            <li class="<%= if fiat_symbol(product) == fiat, do: "active" %>"><%= fiat %></li>
+          <% end %>
+          </ul>
+
           <div class="price">
             <%= trade.price %>
+            <%= fiat_character(product) %>
           </div>
         </div>
 
@@ -40,7 +50,7 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
         </div>
 
         <div class="trade-time">
-          <%= trade.traded_at %>
+          <%= human_datetime(trade.traded_at) %>
         </div>
       </div>
     <% end %>

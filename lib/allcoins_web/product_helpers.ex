@@ -14,6 +14,24 @@ defmodule AllcoinsWeb.ProductHelpers do
   end
 
   @doc ~S"""
+  Returns the name of the cryptocurrency in a human-readable format for a given product.
+
+  ## Examples
+
+    iex> alias Allcoins.Product
+    iex> AllcoinsWeb.ProductHelpers.crypto_name(Product.new("coinbase", "BTC-USD"))
+    "Bitcoin"
+  """
+
+  def crypto_name(product) do
+    case crypto_and_fiat_symbols(product) do
+      %{crypto_symbol: "btc"} -> "Bitcoin"
+      %{crypto_symbol: "eth"} -> "Ethereum"
+      %{crypto_symbol: "ltc"} -> "Litecoin"
+    end
+  end
+
+  @doc ~S"""
   Returns the cryptocurrency symbol.
 
   ## Examples
@@ -23,6 +41,7 @@ defmodule AllcoinsWeb.ProductHelpers do
     iex> AllcoinsWeb.ProductHelpers.crypto_symbol(Product.new("bitstamp", "etheur"))
     "eth"
   """
+
   def crypto_symbol(product), do: crypto_and_fiat_symbols(product).crypto_symbol
 
 
@@ -37,6 +56,7 @@ defmodule AllcoinsWeb.ProductHelpers do
     iex> AllcoinsWeb.ProductHelpers.fiat_symbol(Product.new("bitstamp", "etheur"))
     "eur"
   """
+
   def fiat_symbol(product), do: crypto_and_fiat_symbols(product).fiat_symbol
 
   def fiat_symbols do
@@ -66,10 +86,11 @@ defmodule AllcoinsWeb.ProductHelpers do
   @doc ~S"""
   Provides the correct cryptocurrency symbol for a given Product.
   """
+
   def crypto_icon(conn, product) do
     crypto_symbol = crypto_symbol(product)
     relative_path = Path.join("/images/cryptos", "#{crypto_symbol}.svg")
-    PoeticoinsWeb.Router.Helpers.static_path(conn, relative_path)
+    AllcoinsWeb.Router.Helpers.static_path(conn, relative_path)
   end
 
   @doc ~S"""
@@ -83,6 +104,7 @@ defmodule AllcoinsWeb.ProductHelpers do
     iex> AllcoinsWeb.ProductHelpers.crypto_and_fiat_symbols(Product.new("bitstamp", "btcusd"))
     %{crypto_symbol: "btc", fiat_symbol: "usd"}
   """
+
   def crypto_and_fiat_symbols(%{exchange_name: "coinbase"} = product) do
     [crypto_symbol, fiat_symbol] =
       product.currency_pair
