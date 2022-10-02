@@ -4,7 +4,7 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
   import AllcoinsWeb.ProductHelpers
 
   def mount(_params, _session, socket) do
-    socket = assign(socket, trades: %{}, products: [])
+    socket = assign(socket, trades: %{}, products: [], timezone: get_timezone_from_conn(socket))
     {:ok, socket}
   end
 
@@ -34,7 +34,7 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
     </div>
     <div class="product-components">
     <%= for product <- @products do%>
-      <%= live_component @socket, AllcoinsWeb.ProductComponent, id: product %>
+      <%= live_component @socket, AllcoinsWeb.ProductComponent, id: product, timezone: @timezone %>
     <% end %>
     </div>
     """
@@ -114,5 +114,12 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
   defp product_from_string(product_id) do
     [exchange_name, currency_pair] = String.split(product_id, ":")
     Product.new(exchange_name, currency_pair)
+  end
+
+  defp get_timezone_from_conn(socket) do
+    case get_connect_params(socket) do
+      %{"timezone" => tz} when not is_nil(tz) -> tz
+      _ -> "UTC"
+    end
   end
 end

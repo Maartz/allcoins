@@ -10,7 +10,7 @@ defmodule AllcoinsWeb.ProductComponent do
   def update(assigns, socket) do
     product = assigns.id
 
-    socket = assign(socket, product: product, trade: Allcoins.get_last_trade(product))
+    socket = assign(socket, timezone: assigns.timezone, product: product, trade: Allcoins.get_last_trade(product))
     {:ok, socket}
   end
 
@@ -50,7 +50,7 @@ defmodule AllcoinsWeb.ProductComponent do
       </div>
 
       <div class="trade-time">
-        <%= human_datetime(@trade.traded_at) %>
+        <%= human_datetime(@trade.traded_at, @timezone) %>
       </div>
     </div>
     """

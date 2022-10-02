@@ -46,7 +46,8 @@ defmodule Allcoins.MixProject do
       {:plug_cowboy, "~> 2.0"},
       {:cowlib, "~> 2.9.1", override: true},
       {:gun, "~> 1.3"},
-      {:credo, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:tzdata, "~> 1.1"},
     ]
   end
 
