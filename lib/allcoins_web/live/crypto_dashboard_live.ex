@@ -1,12 +1,9 @@
 defmodule AllcoinsWeb.CryptoDashboardLive do
-
-  import AllcoinsWeb.ProductHelpers
-
   use AllcoinsWeb, :live_view
   alias Allcoins.Product
+  import AllcoinsWeb.ProductHelpers
 
   def mount(_params, _session, socket) do
-    IO.inspect(self(), label: "LIVEVIEW MOUNT")
     socket = assign(socket, trades: %{}, products: [])
     {:ok, socket}
   end
@@ -36,16 +33,19 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
       </form>
     </div>
     <div class="product-components">
-    <%= for product <- @products, trade = @trades[product] do%>
-    <%= live_component @socket, AllcoinsWeb.ProductComponent,
-          product: product, trade: trade %>
+    <%= for product <- @products do%>
+      <%= live_component @socket, AllcoinsWeb.ProductComponent, id: product %>
     <% end %>
     </div>
     """
   end
 
   def handle_info({:new_trade, trade}, socket) do
-    socket = update(socket, :trades, &Map.put(&1, trade.product, trade))
+    send_update(
+      AllcoinsWeb.ProductComponent,
+      id: trade.product,
+      trade: trade
+    )
 
     {:noreply, socket}
   end
@@ -63,12 +63,19 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
 
   def handle_event("add-product", _, socket), do: {:noreply, socket}
 
+  def handle_event("remove-product", %{"product-id" => product_id} = _params, socket) do
+    product = product_from_string(product_id)
+    Allcoins.unsubscribe_to_trades(product) # TODO: unsubscribe_to_trades must be renamed to unsubscribe_from_trades
+    socket = update(socket, :products, &List.delete(&1, product))
+    {:noreply, socket}
+  end
+
   def handle_event("filter-products", %{"search" => search}, socket) do
     products =
       Allcoins.available_products()
       |> Enum.filter(fn product ->
         String.downcase(product.exchange_name) =~ String.downcase(search) or
-        String.downcase(product.currency_pair) =~ String.downcase(search)
+          String.downcase(product.currency_pair) =~ String.downcase(search)
       end)
 
     {:noreply, assign(socket, :products, products)}
@@ -91,9 +98,9 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
       socket
       |> add_product(product)
       |> put_flash(
-           :info,
-           "#{product.exchange_name} - #{product.currency_pair} added successfully"
-         )
+        :info,
+        "#{product.exchange_name} - #{product.currency_pair} added successfully"
+      )
     else
       put_flash(socket, :error, "The product was already added")
     end
@@ -102,5 +109,10 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
   defp grouped_products_by_exchange_name do
     Allcoins.available_products()
     |> Enum.group_by(& &1.exchange_name)
+  end
+
+  defp product_from_string(product_id) do
+    [exchange_name, currency_pair] = String.split(product_id, ":")
+    Product.new(exchange_name, currency_pair)
   end
 end

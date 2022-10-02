@@ -1,5 +1,4 @@
 defmodule AllcoinsWeb.ProductHelpers do
-
   @doc """
   Returns a human-readable timestamp with the following format: `Jan 27, 2021 16:35:08`
 
@@ -43,7 +42,6 @@ defmodule AllcoinsWeb.ProductHelpers do
   """
 
   def crypto_symbol(product), do: crypto_and_fiat_symbols(product).crypto_symbol
-
 
   @doc ~S"""
   Returns the fiat currency symbol.
@@ -119,5 +117,4 @@ defmodule AllcoinsWeb.ProductHelpers do
     fiat_symbol = String.slice(product.currency_pair, 3..6)
     %{crypto_symbol: crypto_symbol, fiat_symbol: fiat_symbol}
   end
-
 end
