@@ -41,7 +41,7 @@ defmodule Allcoins.Exchanges.Client do
     currency_pairs = Keyword.fetch!(opts, :currency_pairs)
 
     quote do
-      @behavior unquote(__MODULE__)
+      @behaviour unquote(__MODULE__)
       import unquote(__MODULE__), only: [validate_required: 2]
       require Logger
 

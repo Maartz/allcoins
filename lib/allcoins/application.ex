@@ -16,7 +16,7 @@ defmodule Allcoins.Application do
       # Start the Endpoint (http/https)
       AllcoinsWeb.Endpoint
       # Start a worker by calling: Allcoins.Worker.start_link(arg)
-      # {Allcoins.Worker, arg}
+      # {Allcoins.Worker, rg}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
