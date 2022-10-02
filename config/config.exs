@@ -5,7 +5,9 @@
 # is restricted to this project.
 
 # General application configuration
-use Mix.Config
+import Config
+
+config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
 # Configures the endpoint
 config :allcoins, AllcoinsWeb.Endpoint,
