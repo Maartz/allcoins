@@ -21,7 +21,7 @@ $blue-text-color: #262f67;
 
 
 html {
-  background: url("/images/background.svg") no-repeat center center fixed;
+  background: url(/images/background.svg) no-repeat center center fixed; 
   -webkit-background-size: cover;
   -moz-background-size: cover;
   -o-background-size: cover;
@@ -47,7 +47,7 @@ body {
   margin-right: auto;
 }
 
-.powered-by-allcoins {
+.powered-by-poeticoding {
   position: absolute;
   vertical-align: middle;
   bottom: 10px;
@@ -60,7 +60,7 @@ body {
   }
 }
 
-.product-components-container {
+.product-components {
   display: inline-flex;
   flex-flow: row wrap;
   // justify-content: flex-start;

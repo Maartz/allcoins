@@ -3,14 +3,27 @@ defmodule AllcoinsWeb.ProductComponent do
   import AllcoinsWeb.ProductHelpers
 
   def update(%{trade: trade} = _assigns, socket) when not is_nil(trade) do
-    socket = assign(socket, trade: trade)
+    product_id = to_string(trade.product)
+    event_name = "new-trade:#{product_id}"
+
+    socket =
+      socket
+      |> assign(:trade, trade)
+      |> push_event(event_name, to_event(trade))
+
     {:ok, socket}
   end
 
   def update(assigns, socket) do
     product = assigns.id
 
-    socket = assign(socket, timezone: assigns.timezone, product: product, trade: Allcoins.get_last_trade(product))
+    socket =
+      assign(socket,
+        product: product,
+        trade: Allcoins.get_last_trade(product),
+        timezone: assigns.timezone
+      )
+
     {:ok, socket}
   end
 
@@ -22,7 +35,9 @@ defmodule AllcoinsWeb.ProductComponent do
   def render(%{trade: trade} = assigns) when not is_nil(trade) do
     ~L"""
     <div class="product-component">
-      <button class="remove" phx-click="remove-product" phx-value-product-id="<%= to_string(@product) %>">X</button>
+      <button class="remove"
+              phx-click="remove-product"
+              phx-value-product-id="<%= to_string(@product) %>">X</button>
       <div class="currency-container">
         <img class="icon" src="<%= crypto_icon(@socket, @product) %>" />
         <div class="crypto-name">
@@ -37,11 +52,26 @@ defmodule AllcoinsWeb.ProductComponent do
             <%= if fiat_symbol(@product) == fiat, do: "active" %>
               "><%= fiat %></li>
           <% end %>
-      </ul>
+       </ul>
 
         <div class="price">
           <%= @trade.price %>
           <%= fiat_character(@product) %>
+        </div>
+      </div>
+
+      <div class="chart-component">
+        <div phx-hook="Chart"
+            id="product-chart-<%= to_string(@product) %>"
+
+            data-price="<%= @trade.price %>"
+
+            data-traded-at="<%= DateTime.to_unix(@trade.traded_at, :millisecond) %>"
+
+            phx-update="ignore"
+
+          >
+          <div class="chart-container"></div>
         </div>
       </div>
 
@@ -88,5 +118,13 @@ defmodule AllcoinsWeb.ProductComponent do
       </div>
     </div>
     """
+  end
+
+  defp to_event(trade) do
+    %{
+      traded_at: trade.traded_at,
+      price: trade.price,
+      volume: trade.volume
+    } 
   end
 end
