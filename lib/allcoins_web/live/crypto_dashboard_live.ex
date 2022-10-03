@@ -4,15 +4,17 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
   alias AllcoinsWeb.Router.Helpers, as: Routes
   import AllcoinsWeb.ProductHelpers
 
-  def mount(params, _session, socket) do
+  require Logger
+
+  def mount(_params, _session, socket) do
     socket = 
-      socket
-      |> assign(
+      assign(
+        socket,
         trades: %{}, 
         products: [], 
         timezone: get_timezone_from_conn(socket)
       )
-      |> add_product_from_params(params)
+
     {:ok, socket}
   end
 
@@ -63,25 +65,26 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
   end
 
   def handle_event("add-product", %{"product_id" => product_id} = _params, socket) do
-    [exchange_name, currency_pair] = String.split(product_id, ":")
-    product = Product.new(exchange_name, currency_pair)
-    socket =
-      socket
-      |> maybe_add_product(product)
-      |> update_product_params()
+    product_ids =
+      socket.assigns.products
+      |> Enum.map(&to_string/1)
+      |> Kernel.++([product_id])
+      |> Enum.uniq()
+
+    socket = push_patch(socket, to: Routes.live_path(socket, __MODULE__, products: product_ids))
     {:noreply, socket}
   end
 
   def handle_event("add-product", _, socket), do: {:noreply, socket}
 
   def handle_event("remove-product", %{"product-id" => product_id} = _params, socket) do
-    product = product_from_string(product_id)
-    Allcoins.unsubscribe_to_trades(product) # TODO: unsubscribe_to_trades must be renamed to unsubscribe_from_trades
-    socket = 
-     socket
-     |> update(:products, &List.delete(&1, product))
-     |> update_product_params
+    product_ids =
+      socket.assigns.products
+      |> Enum.map(&to_string/1)
+      |> Kernel.--([product_id])
+      |> Enum.uniq()
 
+    socket = push_patch(socket, to: Routes.live_path(socket, __MODULE__, products: product_ids))
     {:noreply, socket}
   end
 
@@ -96,19 +99,24 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
     {:noreply, assign(socket, :products, products)}
   end
 
-  def handle_params(_params, _uri, socket) do
+  def handle_params(%{"products" => product_ids}, _uri, socket) do
+    new_products = Enum.map(product_ids, &product_from_string/1)
+    diff = List.myers_difference(socket.assigns.products, new_products)
+    products_to_remove = diff |> Keyword.get_values(:del) |> List.flatten()
+    products_to_insert = diff |> Keyword.get_values(:ins) |> List.flatten()
+
+    socket =
+      Enum.reduce(products_to_remove, socket, fn product, socket -> remove_product(socket, product) end)
+
+    socket =
+      Enum.reduce(products_to_insert, socket, fn product, socket -> add_product(socket, product) end)
+
     {:noreply, socket}
   end
 
-  def add_product(socket, product) do
-    Allcoins.subscribe_to_trades(product)
-
-    socket
-    |> update(:products, &(&1 ++ [product]))
-    |> update(:trades, fn trades ->
-      trade = Allcoins.get_last_trade(product)
-      Map.put(trades, product, trade)
-    end)
+  def handle_params(params, _uri, socket) do
+    Logger.debug("Unhandled params #{inspect(params)}")
+    {:noreply, socket}
   end
 
   @spec maybe_add_product(Phoenix.LiveView.Socket.t(), Product.t()) :: Phoenix.LiveView.Socket.t()
@@ -147,9 +155,13 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
     push_patch(socket, to: Routes.live_path(socket, __MODULE__, products: product_ids))
   end
 
-  defp add_product_from_params(socket, %{"products" => product_ids} = _params) when is_list(product_ids) do
-    products = Enum.map(product_ids, &product_from_string/1)
-    Enum.reduce(products, socket, fn product, socket -> maybe_add_product(socket, product) end)
+  defp add_product(socket, product) do
+    Allcoins.subscribe_to_trades(product)
+    socket |> update(:products, & &1 ++ [product])
   end
-  defp add_product_from_params(socket, _params), do: socket
+
+  defp remove_product(socket, product) do
+    Allcoins.unsubscribe_to_trades(product)
+    socket |> update(:products, & &1 -- [product])
+  end
 end
