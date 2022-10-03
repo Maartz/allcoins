@@ -1,10 +1,18 @@
 defmodule AllcoinsWeb.CryptoDashboardLive do
   use AllcoinsWeb, :live_view
   alias Allcoins.Product
+  alias AllcoinsWeb.Router.Helpers, as: Routes
   import AllcoinsWeb.ProductHelpers
 
-  def mount(_params, _session, socket) do
-    socket = assign(socket, trades: %{}, products: [], timezone: get_timezone_from_conn(socket))
+  def mount(params, _session, socket) do
+    socket = 
+      socket
+      |> assign(
+        trades: %{}, 
+        products: [], 
+        timezone: get_timezone_from_conn(socket)
+      )
+      |> add_product_from_params(params)
     {:ok, socket}
   end
 
@@ -57,7 +65,10 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
   def handle_event("add-product", %{"product_id" => product_id} = _params, socket) do
     [exchange_name, currency_pair] = String.split(product_id, ":")
     product = Product.new(exchange_name, currency_pair)
-    socket = maybe_add_product(socket, product)
+    socket =
+      socket
+      |> maybe_add_product(product)
+      |> update_product_params()
     {:noreply, socket}
   end
 
@@ -66,7 +77,11 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
   def handle_event("remove-product", %{"product-id" => product_id} = _params, socket) do
     product = product_from_string(product_id)
     Allcoins.unsubscribe_to_trades(product) # TODO: unsubscribe_to_trades must be renamed to unsubscribe_from_trades
-    socket = update(socket, :products, &List.delete(&1, product))
+    socket = 
+     socket
+     |> update(:products, &List.delete(&1, product))
+     |> update_product_params
+
     {:noreply, socket}
   end
 
@@ -79,6 +94,10 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
       end)
 
     {:noreply, assign(socket, :products, products)}
+  end
+
+  def handle_params(_params, _uri, socket) do
+    {:noreply, socket}
   end
 
   def add_product(socket, product) do
@@ -122,4 +141,15 @@ defmodule AllcoinsWeb.CryptoDashboardLive do
       _ -> "UTC"
     end
   end
+
+  defp update_product_params(socket) do
+    product_ids = Enum.map(socket.assigns.products, &to_string/1)
+    push_patch(socket, to: Routes.live_path(socket, __MODULE__, products: product_ids))
+  end
+
+  defp add_product_from_params(socket, %{"products" => product_ids} = _params) when is_list(product_ids) do
+    products = Enum.map(product_ids, &product_from_string/1)
+    Enum.reduce(products, socket, fn product, socket -> maybe_add_product(socket, product) end)
+  end
+  defp add_product_from_params(socket, _params), do: socket
 end
